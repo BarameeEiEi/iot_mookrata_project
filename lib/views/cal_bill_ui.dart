@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:iot_mookrata_project/views/show_bill_ui.dart';
 
 class CalBillUI extends StatefulWidget {
   const CalBillUI({super.key});
@@ -40,6 +41,29 @@ class _CalBillUIState extends State<CalBillUI> {
     setState(() {
       imgFlie = File(image.path);
     });
+  }
+
+  Future<void> showWarningDialog(context, msg) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('คำเตือน'),
+          content: Text(
+            msg,
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('ตกลง'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -303,7 +327,57 @@ class _CalBillUIState extends State<CalBillUI> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          if ((isAdult == true && adultCtrl.text.isEmpty) ||
+                              (isChild == true && childCtrl.text.isEmpty)) {
+                            showWarningDialog(
+                                context, 'กรุณากรอกจำนวนผู้ใหญ่และเด็ก');
+                          } else {
+                            int numAdult =
+                                isAdult == true ? int.parse(adultCtrl.text) : 0;
+                            int numChild =
+                                isChild == true ? int.parse(childCtrl.text) : 0;
+                            int numCoke = cokeCtrl.text.isNotEmpty
+                                ? int.parse(cokeCtrl.text)
+                                : 0;
+                            int numPure = pureCtrl.text.isNotEmpty
+                                ? int.parse(pureCtrl.text)
+                                : 0;
+                            double sale = 0;
+                            if (membershipType == 'สมาชิกทั่วไป ลด 10%') {
+                              sale = 0.1;
+                            } else if (membershipType == 'สมาชิก VIP ลด 20%') {
+                              sale = 0.2;
+                            }
+                            double payWaterBuffet = groupWater == 1
+                                ? 25.0 * (numAdult + numChild)
+                                : 0;
+                            double payBuffetTotalNoSale = (299.0 * numAdult) +
+                                (69.0 * numChild) +
+                                (numCoke * 20.0) +
+                                (numPure * 15.0) +
+                                payWaterBuffet;
+                            double paySale = payBuffetTotalNoSale * sale;
+                            double payBuffetTotal =
+                                payBuffetTotalNoSale - paySale;
+
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ShowBillUI(
+                                    numAdult: numAdult,
+                                    numChild: numChild,
+                                    numCoke: numCoke,
+                                    numPure: numPure,
+                                    payWaterBuffet: payWaterBuffet,
+                                    payBuffetTotalNoSale: payBuffetTotalNoSale,
+                                    paySale: paySale,
+                                    payBuffetTotal: payBuffetTotal,
+                                    imageFile: imgFlie,
+                                  ),
+                                ));
+                          }
+                        },
                         icon: Icon(
                           Icons.calculate,
                           color: Colors.white,
@@ -321,7 +395,20 @@ class _CalBillUIState extends State<CalBillUI> {
                     ),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          setState(() {
+                            imgFlie = null;
+                            isAdult = false;
+                            isChild = false;
+                            isWater = false;
+                            adultCtrl.clear();
+                            childCtrl.clear();
+                            cokeCtrl.clear();
+                            pureCtrl.clear();
+                            groupWater = 1;
+                            membershipType = 'ไม่เป็นสมาชิก';
+                          });
+                        },
                         icon: Icon(
                           Icons.cancel,
                           color: Colors.white,
